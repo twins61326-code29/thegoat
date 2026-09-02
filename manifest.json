@@ -1,0 +1,10 @@
+{
+  "name": "Nova Calculator",
+  "short_name": "Nova",
+  "description": "A modern and easy-to-use calculator with scientific functions and calculation history.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#080b13",
+  "theme_color": "#7657ff",
+  "orientation": "portrait"
+}
