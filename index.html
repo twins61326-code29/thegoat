@@ -1,0 +1,868 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Nova Calculator</title>
+
+<style>
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+
+    font-family: Arial, sans-serif;
+    color: white;
+
+    background:
+        radial-gradient(circle at top left, #6c3cff55, transparent 35%),
+        radial-gradient(circle at bottom right, #00d9ff33, transparent 35%),
+        #080b13;
+
+    transition: 0.4s;
+}
+
+body.light {
+    color: #111827;
+
+    background:
+        radial-gradient(circle at top left, #8b5cf655, transparent 35%),
+        radial-gradient(circle at bottom right, #06b6d433, transparent 35%),
+        #eef2ff;
+}
+
+.app {
+    width: 100%;
+    max-width: 430px;
+}
+
+.calculator {
+    padding: 20px;
+    border-radius: 30px;
+
+    background: rgba(20, 25, 40, 0.85);
+    border: 1px solid rgba(255,255,255,0.1);
+
+    box-shadow:
+        0 30px 80px rgba(0,0,0,0.45),
+        inset 0 1px rgba(255,255,255,0.08);
+
+    backdrop-filter: blur(20px);
+}
+
+body.light .calculator {
+    background: rgba(255,255,255,0.85);
+    border: 1px solid rgba(0,0,0,0.08);
+}
+
+.header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.logo {
+    font-size: 22px;
+    font-weight: 900;
+    letter-spacing: 4px;
+}
+
+.subtitle {
+    display: block;
+    color: #8b93a7;
+    font-size: 9px;
+    letter-spacing: 2px;
+    margin-top: 3px;
+}
+
+.theme {
+    width: 42px;
+    height: 42px;
+
+    border: 0;
+    border-radius: 14px;
+
+    background: #171d2d;
+    color: white;
+
+    cursor: pointer;
+    font-size: 18px;
+}
+
+body.light .theme {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.display {
+    min-height: 145px;
+
+    padding: 20px;
+    margin-bottom: 15px;
+
+    border-radius: 22px;
+
+    background: rgba(0,0,0,0.22);
+
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+
+    overflow: hidden;
+}
+
+.old {
+    min-height: 22px;
+    color: #8b93a7;
+    font-size: 15px;
+}
+
+.current {
+    width: 100%;
+    text-align: right;
+
+    font-size: 46px;
+    font-weight: 700;
+
+    overflow-x: auto;
+    white-space: nowrap;
+}
+
+.tools {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 12px;
+}
+
+.tools button {
+    flex: 1;
+    padding: 10px;
+
+    border: 0;
+    border-radius: 12px;
+
+    background: #171d2d;
+    color: #9ca3af;
+
+    cursor: pointer;
+}
+
+body.light .tools button {
+    background: #e5e7eb;
+    color: #4b5563;
+}
+
+.scientific {
+    display: none;
+
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+
+    margin-bottom: 12px;
+}
+
+.scientific.show {
+    display: grid;
+}
+
+.scientific button {
+    height: 42px;
+
+    border: 0;
+    border-radius: 12px;
+
+    background: #171d2d;
+    color: white;
+
+    cursor: pointer;
+}
+
+body.light .scientific button {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.buttons {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+button {
+    font-family: inherit;
+}
+
+.buttons button {
+    height: 65px;
+
+    border: 0;
+    border-radius: 18px;
+
+    background: #171d2d;
+    color: white;
+
+    font-size: 19px;
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        transform 0.12s,
+        background 0.2s;
+}
+
+body.light .buttons button {
+    background: #e5e7eb;
+    color: #111827;
+}
+
+.buttons button:hover {
+    background: #242c42;
+}
+
+body.light .buttons button:hover {
+    background: #d1d5db;
+}
+
+.buttons button:active {
+    transform: scale(0.91);
+}
+
+.operator {
+    color: #00d9ff !important;
+}
+
+.special {
+    color: #ff6b91 !important;
+}
+
+.equal {
+    color: white !important;
+
+    background:
+        linear-gradient(135deg, #7657ff, #00cfff) !important;
+}
+
+.history {
+    margin-top: 18px;
+
+    padding: 20px;
+
+    border-radius: 24px;
+
+    background: rgba(20,25,40,0.75);
+    border: 1px solid rgba(255,255,255,0.08);
+}
+
+body.light .history {
+    background: rgba(255,255,255,0.8);
+}
+
+.history h2 {
+    font-size: 20px;
+    margin-bottom: 5px;
+}
+
+.history p {
+    color: #8b93a7;
+    font-size: 13px;
+}
+
+.history-list {
+    margin-top: 15px;
+
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.history-item {
+    padding: 12px;
+
+    border-radius: 13px;
+
+    background: #171d2d;
+
+    cursor: pointer;
+}
+
+body.light .history-item {
+    background: #e5e7eb;
+}
+
+.history-expression {
+    color: #8b93a7;
+    font-size: 12px;
+}
+
+.history-result {
+    margin-top: 4px;
+    font-size: 18px;
+    font-weight: bold;
+}
+
+.empty {
+    text-align: center;
+    padding: 20px;
+}
+
+@media(max-width: 450px) {
+
+    body {
+        padding: 10px;
+    }
+
+    .calculator {
+        padding: 14px;
+    }
+
+    .buttons {
+        gap: 7px;
+    }
+
+    .buttons button {
+        height: 58px;
+        border-radius: 15px;
+    }
+
+    .current {
+        font-size: 38px;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<div class="app">
+
+    <div class="calculator">
+
+        <div class="header">
+
+            <div>
+                <div class="logo">NOVA</div>
+                <span class="subtitle">SMART CALCULATOR</span>
+            </div>
+
+            <button class="theme" onclick="toggleTheme()">
+                ☀️
+            </button>
+
+        </div>
+
+
+        <div class="display">
+
+            <div id="old" class="old"></div>
+
+            <div id="current" class="current">
+                0
+            </div>
+
+        </div>
+
+
+        <div class="tools">
+
+            <button onclick="toggleScientific()">
+                Scientific
+            </button>
+
+            <button onclick="clearHistory()">
+                Clear History
+            </button>
+
+        </div>
+
+
+        <div id="scientific" class="scientific">
+
+            <button onclick="scientific('sin')">sin</button>
+            <button onclick="scientific('cos')">cos</button>
+            <button onclick="scientific('tan')">tan</button>
+            <button onclick="scientific('sqrt')">√</button>
+
+            <button onclick="scientific('log')">log</button>
+            <button onclick="scientific('ln')">ln</button>
+            <button onclick="scientific('square')">x²</button>
+            <button onclick="add('3.141592653589793')">π</button>
+
+        </div>
+
+
+        <div class="buttons">
+
+            <button class="special" onclick="clearAll()">
+                AC
+            </button>
+
+            <button class="special" onclick="deleteLast()">
+                ⌫
+            </button>
+
+            <button class="operator" onclick="add('%')">
+                %
+            </button>
+
+            <button class="operator" onclick="add('/')">
+                ÷
+            </button>
+
+
+            <button onclick="add('7')">7</button>
+            <button onclick="add('8')">8</button>
+            <button onclick="add('9')">9</button>
+
+            <button class="operator" onclick="add('*')">
+                ×
+            </button>
+
+
+            <button onclick="add('4')">4</button>
+            <button onclick="add('5')">5</button>
+            <button onclick="add('6')">6</button>
+
+            <button class="operator" onclick="add('-')">
+                −
+            </button>
+
+
+            <button onclick="add('1')">1</button>
+            <button onclick="add('2')">2</button>
+            <button onclick="add('3')">3</button>
+
+            <button class="operator" onclick="add('+')">
+                +
+            </button>
+
+
+            <button class="special" onclick="toggleSign()">
+                ±
+            </button>
+
+            <button onclick="add('0')">
+                0
+            </button>
+
+            <button onclick="add('.')">
+                .
+            </button>
+
+            <button class="equal" onclick="calculate()">
+                =
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <div class="history">
+
+        <h2>History</h2>
+        <p>Recent calculations</p>
+
+        <div id="historyList" class="history-list">
+            <div class="empty">
+                No calculations yet.
+            </div>
+        </div>
+
+    </div>
+
+</div>
+
+
+<script>
+
+let expression = "";
+
+let history =
+    JSON.parse(localStorage.getItem("novaHistory")) || [];
+
+
+const current =
+    document.getElementById("current");
+
+const old =
+    document.getElementById("old");
+
+const historyList =
+    document.getElementById("historyList");
+
+
+function updateDisplay() {
+
+    current.textContent =
+        expression || "0";
+
+}
+
+
+function add(value) {
+
+    expression += value;
+
+    updateDisplay();
+
+}
+
+
+function clearAll() {
+
+    expression = "";
+
+    old.textContent = "";
+
+    updateDisplay();
+
+}
+
+
+function deleteLast() {
+
+    expression =
+        expression.slice(0, -1);
+
+    updateDisplay();
+
+}
+
+
+function toggleSign() {
+
+    if (!expression) return;
+
+    if (expression.startsWith("-")) {
+
+        expression =
+            expression.substring(1);
+
+    } else {
+
+        expression =
+            "-" + expression;
+
+    }
+
+    updateDisplay();
+
+}
+
+
+function calculate() {
+
+    if (!expression) return;
+
+    try {
+
+        let safe =
+            expression
+            .replace(/×/g, "*")
+            .replace(/÷/g, "/");
+
+        let result =
+            Function(
+                '"use strict"; return (' +
+                safe +
+                ')'
+            )();
+
+        if (!Number.isFinite(result)) {
+
+            throw new Error();
+
+        }
+
+        result =
+            Number(result.toFixed(10));
+
+        old.textContent =
+            expression + " =";
+
+        history.unshift({
+
+            expression: expression,
+
+            result: result
+
+        });
+
+        history =
+            history.slice(0, 20);
+
+        localStorage.setItem(
+            "novaHistory",
+            JSON.stringify(history)
+        );
+
+        expression =
+            String(result);
+
+        updateDisplay();
+
+        renderHistory();
+
+    }
+
+    catch {
+
+        current.textContent =
+            "Error";
+
+        setTimeout(() => {
+
+            expression = "";
+
+            updateDisplay();
+
+        }, 800);
+
+    }
+
+}
+
+
+function scientific(type) {
+
+    let number =
+        parseFloat(expression);
+
+    if (isNaN(number)) return;
+
+    let result;
+
+    if (type === "sin") {
+
+        result =
+            Math.sin(number * Math.PI / 180);
+
+    }
+
+    if (type === "cos") {
+
+        result =
+            Math.cos(number * Math.PI / 180);
+
+    }
+
+    if (type === "tan") {
+
+        result =
+            Math.tan(number * Math.PI / 180);
+
+    }
+
+    if (type === "sqrt") {
+
+        result =
+            Math.sqrt(number);
+
+    }
+
+    if (type === "log") {
+
+        result =
+            Math.log10(number);
+
+    }
+
+    if (type === "ln") {
+
+        result =
+            Math.log(number);
+
+    }
+
+    if (type === "square") {
+
+        result =
+            number * number;
+
+    }
+
+    if (!Number.isFinite(result)) {
+
+        current.textContent =
+            "Error";
+
+        return;
+
+    }
+
+    old.textContent =
+        type + "(" + number + ")";
+
+    expression =
+        String(Number(result.toFixed(10)));
+
+    updateDisplay();
+
+}
+
+
+function toggleScientific() {
+
+    document
+        .getElementById("scientific")
+        .classList.toggle("show");
+
+}
+
+
+function toggleTheme() {
+
+    document
+        .body
+        .classList
+        .toggle("light");
+
+    const button =
+        document.querySelector(".theme");
+
+    button.textContent =
+        document.body.classList.contains("light")
+        ? "🌙"
+        : "☀️";
+
+}
+
+
+function clearHistory() {
+
+    history = [];
+
+    localStorage.removeItem(
+        "novaHistory"
+    );
+
+    renderHistory();
+
+}
+
+
+function renderHistory() {
+
+    if (history.length === 0) {
+
+        historyList.innerHTML =
+            '<div class="empty">No calculations yet.</div>';
+
+        return;
+
+    }
+
+    historyList.innerHTML =
+        history.map((item, index) => {
+
+            return `
+
+                <div
+                    class="history-item"
+                    onclick="useHistory(${index})"
+                >
+
+                    <div class="history-expression">
+                        ${item.expression}
+                    </div>
+
+                    <div class="history-result">
+                        = ${item.result}
+                    </div>
+
+                </div>
+
+            `;
+
+        }).join("");
+
+}
+
+
+function useHistory(index) {
+
+    expression =
+        String(history[index].result);
+
+    updateDisplay();
+
+}
+
+
+/* Keyboard support */
+
+document.addEventListener(
+    "keydown",
+    function(event) {
+
+        const key = event.key;
+
+        if (
+            /^[0-9.]$/.test(key)
+        ) {
+
+            add(key);
+
+        }
+
+        else if (
+            ["+", "-", "*", "/", "%"]
+            .includes(key)
+        ) {
+
+            add(key);
+
+        }
+
+        else if (
+            key === "Enter" ||
+            key === "="
+        ) {
+
+            calculate();
+
+        }
+
+        else if (
+            key === "Backspace"
+        ) {
+
+            deleteLast();
+
+        }
+
+        else if (
+            key === "Escape"
+        ) {
+
+            clearAll();
+
+        }
+
+    }
+);
+
+
+renderHistory();
+
+updateDisplay();
+
+</script>
+
+</body>
+</html>
