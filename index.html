@@ -74,10 +74,24 @@ section{flex:1;display:flex;flex-direction:column;min-height:0;gap:12px}
  <div class="tools">
   <select id="lang" aria-label="Language"><option value="ar">العربية</option><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option></select>
   <button id="bTheme" aria-label="Theme">◐</button>
+ <div class="screen" dir="ltr">
+  <div class="row"><button id="bTape" class="chip" data-i="hist"></button><button id="bCopy" class="chip" data-i="copy"></button></div>
+  <div id="pv" class="pv" aria-live="polite"></div>
+  <div id="ex" class="ex">0</div>
  </div>
-</header>
-<nav class="tabs"><button class="on" data-tab="calc" data-i="calc"></button><button data-tab="conv" data-i="conv"></button></nav>
+ <div class="pad" dir="ltr">
+  <button class="fn ac" data-k="AC">AC</button><button class="fn" data-k="⌫" aria-label="Backspace">⌫</button><button class="fn" data-k="%">%</button><button class="op" data-k="÷">÷</button>
+  <button data-k="7">7</button><button data-k="8">8</button><button data-k="9">9</button><button class="op" data-k="×">×</button>
+  <button data-k="4">4</button><button data-k="5">5</button><button data-k="6">6</button><button class="op" data-k="−">−</button>
+  <button data-k="1">1</button><button data-k="2">2</button><button data-k="3">3</button><button class="op" data-k="+">+</button>
+  <button class="fn" data-k="P">( )</button><button data-k="0">0</button><button data-k=".">.</button><button class="eq" data-k="=">=</button>
+ </div>
+</section>
 
+<section id="conv" hidden>
+ <div id="cats"></div>
+ <div class="box"><input id="cv" type="text" inputmode="decimal" value="1" aria-label="Value"><select id="cf" aria-label="From"></select></div>
+ <button id="sw" aria-label="Swap">⇅</button>
  <div class="box"><output id="co">1</output><select id="ct" aria-label="To"></select></div>
 </section>
 </main>
@@ -91,6 +105,7 @@ section{flex:1;display:flex;flex-direction:column;min-height:0;gap:12px}
 
 <script>
 (()=>{
+addEventListener("error",e=>{const t=document.getElementById("toast");if(t){t.textContent="⚠ "+e.message;t.classList.add("show")}});
 const $=s=>document.querySelector(s),$$=s=>[...document.querySelectorAll(s)];
 const ls={g(k){try{return localStorage.getItem(k)}catch(e){return null}},s(k,v){try{localStorage.setItem(k,v)}catch(e){}}};
 const T={
@@ -100,9 +115,10 @@ fr:{calc:"Calculatrice",conv:"Convertisseur",hist:"Historique",clear:"Effacer l�
 es:{calc:"Calculadora",conv:"Conversor",hist:"Historial",clear:"Borrar historial",copy:"Copiar",copied:"Copiado",empty:"Sin cálculos aún",err:"Cálculo no válido",len:"Longitud",mass:"Peso",temp:"Temperatura",close:"Cerrar"}};
 const U={len:{m:1,km:1e3,cm:.01,mm:.001,mi:1609.344,ft:.3048,in:.0254},mass:{kg:1,g:.001,lb:.45359237,oz:.028349523},temp:{"°C":1,"°F":1,K:1}};
 const OPS="+−×÷";
-let L=ls.g("nc-l")||({ar:"ar",fr:"fr",es:"es"}[(navigator.language||"en").slice(0,2)]||"en");
+let L=ls.g("novacalc:l");
+if(!T[L])L=({ar:"ar",fr:"fr",es:"es"}[(navigator.language||"en").slice(0,2)]||"en");
 let expr="",fresh=false,bad=false,last="",res="",cat="len",hist=[];
-try{hist=JSON.parse(ls.g("nc-h")||"[]")}catch(e){}
+try{const h=JSON.parse(ls.g("novacalc:h")||"[]");hist=Array.isArray(h)?h.filter(x=>x&&typeof x.e=="string"&&typeof x.r=="string"):[]}catch(e){}
 
 const fmt=v=>{v=parseFloat(v.toPrecision(12));return Math.abs(v)>=1e15||(v!==0&&Math.abs(v)<1e-9)?v.toExponential(6).replace(/\.?0+e/,"e"):v.toLocaleString("en-US",{maximumFractionDigits:10})};
 const pretty=s=>s.replace(/([\d)%])([+−×÷])/g,"$1 $2 ").trim();
@@ -113,6 +129,11 @@ function calc(s){
  while(t.length&&"+-×÷(".includes(t[t.length-1]))t.pop();
  let o=0;t.forEach(x=>{if(x=="(")o++;if(x==")")o--});while(o-->0)t.push(")");
  if(!t.length)throw 0;
+ let i=0;const pk=()=>t[i];
+ const ex=()=>{let a=tm();while(pk()=="+"||pk()=="-"){const op=t[i++],b=tm();if(b.p)b.v=a.v*b.v;a={v:op=="+"?a.v+b.v:a.v-b.v}}return a};
+ const tm=()=>{let a=un();while(pk()=="×"||pk()=="÷"){const op=t[i++],b=un();a={v:op=="×"?a.v*b.v:a.v/b.v}}return a};
+ const un=()=>{if(pk()=="-"){i++;const a=un();return{v:-a.v,p:a.p}}return po()};
+ const po=()=>{let a=pr();while(pk()=="%"){i++;a={v:a.v/100,p:true}}return a};
  const pr=()=>{const x=t[i++];if(x=="("){const a=ex();if(pk()==")")i++;return{v:a.v}}const n=parseFloat(x);if(isNaN(n))throw 0;return{v:n}};
  const r=ex();if(i<t.length||!isFinite(r.v))throw 0;return r.v;
 }
@@ -130,7 +151,7 @@ function draw(){
 function ev(){
  if(!expr)return;
  try{const v=calc(expr),r=raw(v);
-  hist.unshift({e:expr,r});hist=hist.slice(0,30);ls.s("nc-h",JSON.stringify(hist));tape();
+  hist.unshift({e:expr,r});hist=hist.slice(0,30);ls.s("novacalc:h",JSON.stringify(hist));tape();
   last=expr;res=fmt(v);expr=/e/.test(r)?"":r;fresh=true;
   const q=$(".eq");q.classList.remove("burst");void q.offsetWidth;q.classList.add("burst");
  }catch(e){bad=true}
@@ -153,6 +174,9 @@ function press(k){
   else if(k=="%"){if(expr&&/[\d)%]/.test(c))expr+="%"}
   else if(k=="−"){if(c=="−")return draw();if(c=="+")expr=expr.slice(0,-1);expr+=k}
   else{
+   while(expr&&OPS.includes(expr.slice(-1)))expr=expr.slice(0,-1);
+   if(!expr||expr.slice(-1)=="(")return draw();
+   expr+=k}
  }
  draw();
 }
@@ -174,6 +198,14 @@ function conv(){
  const f=$("#cf").value,t=$("#ct").value;let r;
  if(cat=="temp"){const c=f=="°C"?v:f=="°F"?(v-32)*5/9:v-273.15;r=t=="°C"?c:t=="°F"?c*9/5+32:c+273.15}
  else r=v*U[cat][f]/U[cat][t];
+ $("#co").textContent=fmt(r);
+}
+function units(){
+ const ks=Object.keys(U[cat]),opt=()=>ks.map(k=>`<option>${k}</option>`).join("");
+ $("#cf").innerHTML=opt();$("#ct").innerHTML=opt();$("#ct").selectedIndex=1;conv();
+}
+function cats(){
+ const c=$("#cats");c.textContent="";
  Object.keys(U).forEach(k=>{const b=document.createElement("button");b.className="chip"+(k==cat?" on":"");b.textContent=T[L][k];b.onclick=()=>{cat=k;cats();units()};c.append(b)});
 }
 function lang(){
@@ -187,15 +219,15 @@ $$(".tabs button").forEach(b=>b.onclick=()=>{
  $$(".tabs button").forEach(x=>x.classList.toggle("on",x==b));
  $("#calc").hidden=b.dataset.tab!="calc";$("#conv").hidden=b.dataset.tab!="conv"});
 $("#bTape").onclick=()=>box(true);$("#bX").onclick=$("#veil").onclick=()=>box(false);
-$("#bClr").onclick=()=>{hist=[];ls.s("nc-h","[]");tape()};
+$("#bClr").onclick=()=>{hist=[];ls.s("novacalc:h","[]");tape()};
 $("#bCopy").onclick=()=>{
  let v=fresh?expr:"";
  if(!v){try{v=raw(calc(expr))}catch(e){}}
  if(!v)return;
  (navigator.clipboard?navigator.clipboard.writeText(v.replace("−","-")):Promise.reject()).then(()=>toast(T[L].copied)).catch(()=>{});
 };
-$("#lang").onchange=e=>{L=e.target.value;ls.s("nc-l",L);lang()};
-$("#bTheme").onclick=()=>{const t=document.documentElement.dataset.theme=="light"?"dark":"light";ls.s("nc-t",t);theme(t)};
+$("#lang").onchange=e=>{L=e.target.value;ls.s("novacalc:l",L);lang()};
+$("#bTheme").onclick=()=>{const t=document.documentElement.dataset.theme=="light"?"dark":"light";ls.s("novacalc:t",t);theme(t)};
 $("#cv").oninput=conv;$("#cf").onchange=$("#ct").onchange=conv;
 $("#sw").onclick=()=>{const a=$("#cf").value;$("#cf").value=$("#ct").value;$("#ct").value=a;conv()};
 addEventListener("keydown",e=>{
@@ -206,10 +238,11 @@ addEventListener("keydown",e=>{
  if(/^[\d.+×÷−%=P]$|^(AC|⌫)$/.test(k)){e.preventDefault();press(k)}
 });
 
-theme(ls.g("nc-t")||(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"));
+const st=ls.g("novacalc:t");
+theme(st=="light"||st=="dark"?st:(matchMedia("(prefers-color-scheme: light)").matches?"light":"dark"));
 units();lang();
 })();
 </script>
 </body>
-    </html>
-    
+ </html>
+                                                            
